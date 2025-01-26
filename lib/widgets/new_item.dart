@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shopping_list/data/categories.dart';
 import 'package:shopping_list/models/category.dart';
 import 'package:shopping_list/models/grocery_item.dart';
@@ -11,22 +14,50 @@ class NewItem extends StatefulWidget {
 }
 
 class _NewItemState extends State<NewItem> {
-  final _keyForm = GlobalKey<FormState>(); // This helps to access to Forms
+  final _keyForm =
+      GlobalKey<FormState>(); // This will create a GlobalKey for the Form
   var _enteredName = '';
   var _enteredQuantity = 1;
   var _selectedCategory = categories[Categories.vegetables]!;
+  var _isSending = false; // This will check if the item is saving
 
-  void _saveItem() {
+  void _saveItem() async {
     if (_keyForm.currentState!.validate()) {
-      // This helps to trigger validators in FormField widgets
-      _keyForm.currentState!.save();
+      // This will validate the Form
+      _keyForm.currentState!.save(); // This will save the Form
+      setState(() {
+        _isSending = true;
+      }); // This will set the item to saving
+      final url = Uri.https('shopping-list-592f8-default-rtdb.firebaseio.com',
+          '/shopping-list.json'); // This will create a URL
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(
+          {
+            'name': _enteredName,
+            'quantity': _enteredQuantity,
+            'category': _selectedCategory.title,
+          },
+        ),
+      ); // This will send a POST request to the URL
+
+      final Map<String, dynamic> resData =
+          json.decode(response.body); // This will decode the response body
+
+      if (!context.mounted) {
+        // This will check if the context is mounted
+        return;
+      }
+
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop(
         GroceryItem(
-            id: DateTime.now().toString(),
+            id: resData['name'],
             name: _enteredName,
             quantity: _enteredQuantity,
             category: _selectedCategory),
-      );
+      ); // This will pop the current screen and return the new item
     }
   }
 
@@ -39,7 +70,7 @@ class _NewItemState extends State<NewItem> {
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Form(
-          key: _keyForm, // This helps to keep the internal state
+          key: _keyForm, // This will set the GlobalKey to the Form
           child: Column(
             children: [
               TextFormField(
@@ -120,15 +151,26 @@ class _NewItemState extends State<NewItem> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                    onPressed: () {
-                      _keyForm.currentState!
-                          .reset(); // This helps to reset the Form Widget
-                    },
+                    onPressed: _isSending // This will check if the item is saving
+                        ? null // This will disable the button if the item is saving
+                        : () {
+                            _keyForm.currentState!
+                                .reset(); // This helps to reset the Form Widget
+                          },
                     child: const Text('Reset'),
                   ),
                   ElevatedButton(
-                    onPressed: _saveItem,
-                    child: const Text('Add item'),
+                    onPressed: _isSending
+                        ? null
+                        : _saveItem, // This will disable the button if the item is saving
+                    child: _isSending //
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(),
+                          ) // This will show a loading spinner if the item is saving
+                        : const Text(
+                            'Add item'), // This will show the text if the item is not saving
                   ),
                 ],
               ),
