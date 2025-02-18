@@ -1,0 +1,2 @@
+C:/Users/ochil/flutter_projects/shopping_list/android/app/.cxx/Debug/3lr1s425/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/ochil/flutter_projects/shopping_list/android/app/.cxx/Debug/3lr1s425/armeabi-v7a/CMakeFiles/rebuild_cache.dir
